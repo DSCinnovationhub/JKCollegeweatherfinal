@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Dashboard - Meteorological Telemetry Portal</title>
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ChartJS for potential updates, though we want maximum screen space for widgets -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+
+<body class="dashboard-theme">
+
+    <!-- Global Glowing Background Accents -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <!-- Shared SVG gradient definitions accessible to all SVG orbit panels -->
+    <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true"
+        xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="sun-gradient" x1="0" y1="0" x2="400" y2="0" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#f43f5e" />
+                <stop offset="50%" stop-color="#fb923c" />
+                <stop offset="100%" stop-color="#8b5cf6" />
+            </linearGradient>
+            <linearGradient id="moon-gradient" x1="0" y1="0" x2="400" y2="0" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#facc15" />
+                <stop offset="50%" stop-color="#fb923c" />
+                <stop offset="100%" stop-color="#ea580c" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <!-- Scalable 1920x1080 Dashboard Wrapper -->
+    <div id="dashboard-container">
+
+        <!-- Header Panel -->
+        <header class="dashboard-header">
+            <div class="header-left">
+                <img src="https://upload.wikimedia.org/wikipedia/en/b/be/J._K._College_logo.png" alt="J.K. College Logo"
+                    class="header-logo left-logo">
+                <div class="title-block">
+                    <h1>METEOROLOGICAL STATION TELEMETRY</h1>
+                    <div class="collab-badge">
+                        <span class="badge-tag">Joint Meteorological Project</span>
+                        <p class="collab-text"><strong>J.K. College, Purulia</strong> &amp; <strong>District Science
+                                Centre, Purulia</strong></p>
+                    </div>
+                    <p class="gov-text">A unit of National Council of Science Museums (NCSM), Ministry of Culture, Govt.
+                        of India</p>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="quick-status-badge" id="quick-status">
+                    <!--span id="quick-weather-text">SYSTEM ONLINE</span-->
+                </div>
+            </div>
+
+            <div class="header-right">
+                <div class="server-status">
+                    <span class="pulse-ring green" id="status-ring"></span>
+                    <span class="status-lbl" id="connection-status">Live Telemetry Connected</span>
+                </div>
+                <a href="index.html" class="nav-btn-link"><i class="fa-solid fa-house"></i> Main Portal</a>
+                <div class="time-widget">
+                    <div class="date-display" id="date-part">Tuesday, July 7, 2026</div>
+                    <div class="time-display" id="time-part">12:54:20 PM</div>
+                </div>
+                <img src="https://upload.wikimedia.org/wikipedia/en/2/2d/National_Council_of_Science_Museums_India_logo.png"
+                    alt="District Science Centre Logo" class="header-logo right-logo">
+            </div>
+        </header>
+
+        <!-- Main Dashboard Content Grid -->
+        <main class="dashboard-grid">
+
+            <!-- COLUMN 1: Temperature, Humidity, Pressure, Comfort (Left Side) -->
+            <div class="grid-column">
+
+                <!-- Temperature & Feels Like Widget -->
+                <section class="card temp-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <i class="fa-solid fa-temperature-three-quarters icon-temp"></i>
+                        <h2>Temperature &amp; Thermal Index</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="temp-row">
+                            <div class="jumbo-value">
+                                <span id="current-temp">--</span><span class="unit">°C</span>
+                            </div>
+                            <div class="temp-sub-stats">
+                                <div class="sub-stat-item">
+                                    <span class="stat-lbl">Real Feel</span>
+                                    <span class="stat-val" id="feels-temp">--°C</span>
+                                </div>
+                                <div class="sub-stat-item">
+                                    <span class="stat-lbl">Comfort</span>
+                                    <span class="stat-val font-highlight" id="comfort-text">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="temp-slider-wrap">
+                            <div class="slider-bounds">
+                                <span>Low: <strong id="low-temp">--°C</strong></span>
+                                <span>High: <strong id="high-temp">--°C</strong></span>
+                            </div>
+                            <div class="custom-progress-bg">
+                                <div class="custom-progress-fill" id="temp-progress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Atmosphere Metrics (Humidity, Pressure, Altitude) -->
+                <section class="card atmos-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <i class="fa-solid fa-cloud-sun icon-atmos"></i>
+                        <h2>Atmospheric State</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="atmos-grid">
+                            <!-- Humidity -->
+                            <div class="atmos-widget">
+                                <div class="widget-meta">
+                                    <span class="widget-lbl">Relative Humidity</span>
+                                    <span class="widget-val" id="humidity-val">--%</span>
+                                </div>
+                                <div class="custom-progress-bg">
+                                    <div class="custom-progress-fill color-blue" id="humidity-progress"
+                                        style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Barometric Pressure -->
+                            <div class="atmos-widget">
+                                <div class="widget-meta">
+                                    <span class="widget-lbl">Pressure (<span id="pressure-trend">Steady</span>)</span>
+                                    <span class="widget-val" id="pressure-val">-- hPa</span>
+                                </div>
+                                <div class="custom-progress-bg">
+                                    <div class="custom-progress-fill color-purple" id="pressure-progress"
+                                        style="width: 0%"></div>
+                                </div>
+                            </div>
+                            <!-- Altitude -->
+                            <div class="atmos-widget mini-widgets">
+                                <div class="mini-widget-item">
+                                    <i class="fa-solid fa-mountain"></i>
+                                    <div>
+                                        <span class="mini-lbl">Altitude</span>
+                                        <span class="mini-val" id="altitude-val">-- m</span>
+                                    </div>
+                                </div>
+                                <div class="mini-widget-item">
+                                    <i class="fa-solid fa-flask"></i>
+                                    <div>
+                                        <span class="mini-lbl">VOC (Volatile Gases)</span>
+                                        <span class="mini-val" id="gas-val">-- ppm</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Weather Predictions (Zambretti Engine) -->
+                <section class="card forecast-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <i class="fa-solid fa-wand-magic-sparkles icon-forecast"></i>
+                        <h2>Zambretti Predictive System</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="forecast-content">
+                            <div class="forecast-visual" id="forecast-icon-box">
+                                <i class="fa-solid fa-cloud-sun-rain forecast-dynamic-icon float-animation"></i>
+                            </div>
+                            <div class="forecast-details">
+                                <span class="forecast-lbl">12-24h Local Forecast</span>
+                                <span class="forecast-val" id="forecast-text">Analyzing atmospheric trends...</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- COLUMN 2: Celestial Tracker & Sky Dome, Precipitation (Center) -->
+            <div class="grid-column col-center">
+
+                <!-- Celestial Sky Dome Tracker (Sun/Moon Parabolic Path) -->
+                <section class="card celestial-card">
+                    <div class="sky-dome-bg" id="sky-backdrop"></div>
+                    <div class="card-header border-none">
+                        <i class="fa-solid fa-sun icon-celestial"></i>
+                        <h2>Celestial Space-Time Orbit</h2>
+                    </div>
+                    <div class="card-body celestial-body">
+
+                        <!-- Dual Parabolic Orbit Layout -->
+                        <div class="celestial-dual-layout">
+
+                            <!-- SUN ORBIT PANEL -->
+                            <div class="orbit-panel sun-panel">
+                                <h3 class="orbit-title">Sun</h3>
+                                <div class="orbit-container">
+                                    <svg class="orbit-svg" viewBox="0 0 400 190" preserveAspectRatio="none">
+                                        <!-- Below-horizon diagonal tails -->
+                                        <line x1="120" y1="110" x2="15" y2="185" class="orbit-tail" />
+                                        <line x1="280" y1="110" x2="385" y2="185" class="orbit-tail" />
+                                        <!-- Horizon dashed line -->
+                                        <line x1="10" y1="110" x2="390" y2="110" class="horizon-line" />
+                                        <!-- Smooth arc above horizon -->
+                                        <path d="M 120 110 Q 200 -50 280 110" class="orbit-path sun-path" />
+                                        <!-- Horizon intersection nodes -->
+                                        <circle cx="120" cy="110" r="7" class="horizon-node" />
+                                        <circle cx="280" cy="110" r="7" class="horizon-node" />
+                                    </svg>
+
+                                    <!-- Sun Node -->
+                                    <div class="orbit-node sun-node-active" id="sun-node-node">
+                                        <div class="node-halo sun-halo"></div>
+                                        <i class="fa-solid fa-sun"></i>
+                                    </div>
+
+                                    <!-- Daylight duration center caption -->
+                                    <div class="duration-caption" id="daylight-duration-val">-- hrs -- mins</div>
+                                </div>
+                                <div class="orbit-times">
+                                    <div class="time-item">
+                                        <span class="time-val-big" id="sunrise-time-val">--:-- <span
+                                                class="ampm-small">--</span></span>
+                                        <span class="time-lbl-small">Sunrise</span>
+                                    </div>
+                                    <div class="time-item text-right">
+                                        <span class="time-val-big" id="sunset-time-val">--:-- <span
+                                                class="ampm-small">--</span></span>
+                                        <span class="time-lbl-small">Sunset</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- MOON ORBIT PANEL -->
+                            <div class="orbit-panel moon-panel">
+                                <h3 class="orbit-title">Moon</h3>
+                                <div class="orbit-container">
+                                    <svg class="orbit-svg" viewBox="0 0 400 190" preserveAspectRatio="none">
+                                        <!-- Below-horizon diagonal tails -->
+                                        <line x1="120" y1="110" x2="15" y2="185" class="orbit-tail" />
+                                        <line x1="280" y1="110" x2="385" y2="185" class="orbit-tail" />
+                                        <!-- Horizon dashed line -->
+                                        <line x1="10" y1="110" x2="390" y2="110" class="horizon-line" />
+                                        <!-- Smooth arc above horizon -->
+                                        <path d="M 120 110 Q 200 -50 280 110" class="orbit-path moon-path" />
+                                        <!-- Horizon intersection nodes -->
+                                        <circle cx="120" cy="110" r="7" class="horizon-node" />
+                                        <circle cx="280" cy="110" r="7" class="horizon-node" />
+                                    </svg>
+
+                                    <!-- Moon Node -->
+                                    <div class="orbit-node moon-node-active" id="moon-node-node">
+                                        <div class="node-halo moon-halo"></div>
+                                        <span id="moon-char-node">🌑</span>
+                                    </div>
+
+                                    <!-- Moon duration center caption -->
+                                    <div class="duration-caption" id="moon-duration-val">-- hrs -- mins</div>
+                                </div>
+                                <div class="orbit-times">
+                                    <div class="time-item">
+                                        <span class="time-val-big" id="moonrise-time-val">--:-- <span
+                                                class="ampm-small">--</span></span>
+                                        <span class="time-lbl-small">Moonrise</span>
+                                    </div>
+                                    <div class="time-item text-right">
+                                        <span class="time-val-big" id="moonset-time-val">--:-- <span
+                                                class="ampm-small">--</span></span>
+                                        <span class="time-lbl-small">Moonset</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Astronomic Summary Details -->
+                        <div class="celestial-stats">
+                            <div class="celestial-stat-item">
+                                <span class="c-lbl">Daylight Duration</span>
+                                <span class="c-val" id="daylight-lbl">--h --m</span>
+                            </div>
+                            <div class="celestial-stat-item border-left moon-phase-col">
+                                <span class="c-lbl">Moon Phase</span>
+                                <div class="moon-phase-widget">
+                                    <div class="moon-graphic-container">
+                                        <span id="moon-phase-icon" class="moon-phase-emoji-display">🌑</span>
+                                    </div>
+                                    <div class="moon-phase-details">
+                                        <span class="moon-illum-percent" id="moon-illum-pct">--%</span>
+                                        <span class="moon-phase-label" id="moon-phase-name">New Moon</span>
+                                    </div>
+                                </div>
+                                <div class="next-full-moon-badge">
+                                    <span class="full-moon-dot"></span>
+                                    <div class="next-full-moon-text">
+                                        <span class="next-full-moon-lbl">Next full moon</span>
+                                        <span class="next-full-moon-val" id="next-full-moon-val">-- --</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- Precipitation & Rain Widget -->
+                <section class="card rain-card">
+                    <div class="card-glow"></div>
+                    <!-- Rain falling animation container -->
+                    <div class="rain-simulator">
+                        <canvas class="lightning-canvas" id="lightning-canvas"></canvas>
+                        <div class="rain-cloud cloud-1"></div>
+                        <div class="rain-cloud cloud-2"></div>
+                        <div class="rain-cloud cloud-3"></div>
+                        <div class="rain-droplets" id="rain-animation-layer"></div>
+                        <div class="rain-ground-splash"></div>
+                    </div>
+                    <div class="card-header">
+                        <i class="fa-solid fa-cloud-showers-heavy icon-rain"></i>
+                        <h2>Precipitation &amp; Rainfall</h2>
+                        <div class="header-badge" id="rain-intensity-badge">None</div>
+                    </div>
+                    <div class="card-body rain-body-flex">
+                        <div class="rain-data">
+                            <div class="rain-main-stat">
+                                <span class="rain-val-large" id="rain-accum">--</span><span
+                                    class="rain-unit-large">mm</span>
+                            </div>
+                            <div class="rain-meta">
+                                <span>Hourly Rate:</span>
+                                <strong id="rain-hourly">-- mm/h</strong>
+                            </div>
+                        </div>
+
+                        <!-- Hourly Rainfall Histogram -->
+                        <div class="rain-histogram-wrap">
+                            <div class="rain-histogram-label">24h Rainfall History</div>
+                            <div class="rain-histogram" id="rain-histogram">
+                                <!-- Bars generated by JS -->
+                            </div>
+                            <div class="rain-histogram-axis">
+                                <span>-24h</span>
+                                <span>-18h</span>
+                                <span>-12h</span>
+                                <span>-6h</span>
+                                <span>Now</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- COLUMN 3: Wind compass, AQI, Gases, Alert Center (Right Side) -->
+            <div class="grid-column">
+
+                <!-- Wind Telemetry & Vector Vane -->
+                <section class="card wind-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <i class="fa-solid fa-wind icon-wind"></i>
+                        <h2>Wind Dynamics</h2>
+                        <div class="header-badge" id="wind-strength-badge">Calm</div>
+                    </div>
+                    <div class="card-body wind-layout">
+                        <!-- Compass Dial Visual -->
+                        <div class="compass-viewport">
+                            <div class="compass-dial-rim">
+                                <span class="dir-lbl d-n">N</span>
+                                <span class="dir-lbl d-e">E</span>
+                                <span class="dir-lbl d-s">S</span>
+                                <span class="dir-lbl d-w">W</span>
+
+                                <div class="wind-pointer-needle" id="wind-needle">
+                                    <div class="needle-pointer"></div>
+                                </div>
+                                <div class="compass-center">
+                                    <span class="speed-number" id="compass-speed">0</span>
+                                    <span class="speed-unit">km/h</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Anemometer Vanes spinner + text values -->
+                        <div class="wind-details-panel">
+                            <div class="anemometer-spin-box">
+                                <i class="fa-solid fa-fan spinning-anemometer" id="wind-anemometer-cups"></i>
+                                <span class="spinner-caption">Vane Velocity Link</span>
+                            </div>
+                            <div class="wind-text-stats">
+                                <div class="wind-stat-row">
+                                    <span>Average Speed</span>
+                                    <strong id="wind-avg-val">-- km/h</strong>
+                                </div>
+                                <div class="wind-stat-row">
+                                    <span>Gust Velocity</span>
+                                    <strong id="wind-gust-val">-- km/h</strong>
+                                </div>
+                                <div class="wind-stat-row">
+                                    <span>Bearing Angle</span>
+                                    <strong id="wind-dir-deg">--</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Air Quality Index (PM2.5, PM10) -->
+                <section class="card aqi-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <i class="fa-solid fa-lungs icon-aqi"></i>
+                        <h2>Ambient Air Quality</h2>
+                        <div class="aqi-text-badge" id="aqi-status-badge">--</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="aqi-display">
+                            <div class="aqi-score-container">
+                                <span class="aqi-score-num" id="aqi-val">--</span>
+                                <span class="aqi-score-lbl">AQI Score</span>
+                            </div>
+
+                            <div class="aqi-spectrum-indicator-wrap">
+                                <div class="aqi-gradient-spectrum">
+                                    <div class="spectrum-pin" id="aqi-indicator-pin" style="left: 0%"></div>
+                                </div>
+                                <div class="aqi-spectrum-lbls">
+                                    <span>Good</span>
+                                    <span>Moderate</span>
+                                    <span>Unhealthy</span>
+                                    <span>Severe</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pm-levels-grid">
+                            <div class="pm-progress-widget">
+                                <div class="pm-meta">
+                                    <span class="pm-lbl">PM 2.5 (Fine Particles)</span>
+                                    <span class="pm-val" id="pm25-val">-- µg/m³</span>
+                                </div>
+                                <div class="custom-progress-bg">
+                                    <div class="custom-progress-fill color-amber" id="pm25-progress" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pm-levels-grid-item pm-progress-widget">
+                                <div class="pm-meta">
+                                    <span class="pm-lbl">PM 10 (Coarse Dust)</span>
+                                    <span class="pm-val" id="pm10-val">-- µg/m³</span>
+                                </div>
+                                <div class="custom-progress-bg">
+                                    <div class="custom-progress-fill color-orange" id="pm10-progress" style="width: 0%">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Chemical Compounds & Alert Console -->
+                <section class="card chemical-card">
+                    <div class="card-glow"></div>
+                    <div class="card-header">
+                        <i class="fa-solid fa-triangle-exclamation icon-chem"></i>
+                        <h2>Gases &amp; System Alerts</h2>
+                    </div>
+                    <div class="card-body chemical-flex">
+                        <div class="gas-stats-list">
+                            <div class="gas-item">
+                                <span class="g-lbl">Carbon Monoxide (CO)</span>
+                                <strong class="g-val" id="co-val">-- ppm</strong>
+                            </div>
+                            <div class="gas-item">
+                                <span class="g-lbl">Nitrogen Dioxide (NO₂)</span>
+                                <strong class="g-val" id="no2-val">-- ppm</strong>
+                            </div>
+                        </div>
+
+                        <!-- Emergency Ticker / Safety Banner -->
+                        <div class="safety-alert-console" id="safety-panel">
+                            <div class="alert-status-header">
+                                <i class="fa-solid fa-circle-check" id="safety-icon"></i>
+                                <span id="safety-title">Atmospheric State Clear</span>
+                            </div>
+                            <div class="alert-messages-scroller" id="alert-messages-box">
+                                <div class="alert-message-item">No active meteorological alerts are currently
+                                    registered.</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+        </main>
+
+        <!-- Footer Panel -->
+        <footer class="dashboard-footer">
+            <div class="footer-left">
+                <i class="fa-solid fa-laptop-code"></i>
+                <span class="meta-label" style="font-size: 16px;">Designed &amp; Maintained by <strong>Innovation Hub,
+                        District Science Centre, Purulia</strong></span>
+            </div>
+
+            <div class="footer-center">
+                <span class="meta-label">Telemetry Source: </span>
+                        <span class="meta-value" id="data-source-meta">Syncing...</span>
+            </div>
+
+            <div class="footer-right">
+                <i class="fa-solid fa-people-group"></i>
+                <span class="meta-label" style="font-size: 16px;"><strong> Department of Physics</span>
+            </div>
+        </footer>
+
+        <!-- ═══ EXTREME WEATHER ALERT OVERLAY ═══ -->
+        <div id="extreme-alert-overlay" class="extreme-alert-overlay" aria-live="assertive" role="alertdialog"
+            aria-hidden="true">
+            <!-- Content panel -->
+            <div class="alert-panel">
+                <div class="alert-panel-top-bar">
+                    <div class="alert-siren-wrap">
+                        <div class="alert-siren-ring"></div>
+                        <i class="fa-solid fa-triangle-exclamation alert-siren-icon" id="alert-siren-icon"></i>
+                    </div>
+                    <div class="alert-header-text">
+                        <div class="alert-severity-badge" id="alert-severity-badge">CRITICAL ALERT</div>
+                        <div class="alert-main-title" id="alert-main-title">⚠ EXTREME WEATHER WARNING</div>
+                    </div>
+                    <div class="alert-countdown-wrap">
+                        <svg class="alert-countdown-ring" viewBox="0 0 44 44">
+                            <circle cx="22" cy="22" r="18" class="ring-track" />
+                            <circle cx="22" cy="22" r="18" class="ring-progress" id="alert-ring-progress" />
+                        </svg>
+                        <span class="alert-countdown-num" id="alert-countdown-num">10</span>
+                    </div>
+                </div>
+                <div class="alert-divider"></div>
+                <div class="alert-messages-list" id="alert-messages-list"></div>
+                <div class="alert-footer">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span>JK College Weather Station · Purulia, WB</span>
+                    <button class="alert-dismiss-btn" id="alert-dismiss-btn" onclick="dismissExtremeAlert()">
+                        <i class="fa-solid fa-xmark"></i> Dismiss
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="dashboard.js"></script>
+</body>
+
+</html>
